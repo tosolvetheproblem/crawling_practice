@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>파이썬 크롤링 3단계</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE everyday study page: calm, clear, one step at a time
+   IDEA a highlighter on printed HTML: the program reads code, marks what it needs, copies it into a table
+   PICTURE live three-panel machine: book card → its HTML → CSV row, driven by step buttons
+   COLOUR white paper, ink, cobalt #2342c9 band, highlighter yellow #ffd84d for what gets picked
+   TYPE IBM Plex Sans KR 700 + IBM Plex Sans KR, JetBrains Mono for code
+   LAYOUT laptop: title across top, three panels in a row beneath; phone: title, panels stacked, buttons */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0c1024);--ink:light-dark(#14161c,#e9ecf7);--mute:light-dark(#555b6b,#a3aac2);--band:light-dark(#2342c9,#17256a);--panel:light-dark(#ffffff,#121a3d);--line:light-dark(#dfe3ee,#2a3463);--soft:light-dark(#f2f4fb,#151d45);--hi:#ffd84d;--hink:#14161c;--ok:light-dark(#1d7a46,#6fd39b)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html{scroll-padding-top:72px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 "IBM Plex Sans KR",system-ui,sans-serif;overflow-x:clip}
+.band{padding-block:clamp(28px,4vw,64px);padding-left:max(5vw,16px);padding-right:max(5vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+h1,h2,h3{line-height:1.15;letter-spacing:-.02em;text-wrap:balance;margin:0}
+h1{font-size:clamp(32px,4.6vw,50px)}
+h2{font-size:clamp(26px,3vw,34px);margin-bottom:14px}
+h3{font-size:20px;margin:22px 0 8px}
+p{margin:0 0 12px;max-width:68ch}
+code,pre{font-family:"JetBrains Mono",ui-monospace,monospace}
+code{font-size:.92em;background:var(--soft);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+.hero{background:var(--band);color:#fff}
+.hero p{color:#dfe5ff;font-size:17px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 22px}
+.flow button{font:600 16px/1 inherit;font-family:inherit;min-height:44px;padding:0 18px;border-radius:22px;border:2px solid #fff6;background:transparent;color:#fff;cursor:pointer}
+.flow button[aria-pressed=true]{background:var(--hi);border-color:var(--hi);color:var(--hink)}
+.flow button:focus-visible,.copy:focus-visible,.check input:focus-visible{outline:3px solid var(--hi);outline-offset:2px}
+.machine{display:grid;grid-template-columns:minmax(0,.8fr) 40px minmax(0,1.3fr) 40px minmax(0,1fr);align-items:stretch}
+.pn{background:var(--panel);color:var(--ink);border-radius:12px;padding:16px;transition:opacity .35s,transform .35s}
+.pn.dim{opacity:.45}
+.pn h4{margin:0 0 10px;font-size:14px;color:var(--mute);font-weight:600}
+.arr{display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;opacity:.4;transition:opacity .35s}
+.arr.on{opacity:1}
+.book{display:grid;grid-template-columns:74px minmax(0,1fr);gap:12px}
+.cover{height:108px;border-radius:3px 6px 6px 3px;background:linear-gradient(90deg,#8a2b1d 0 9px,#c2452f 9px);box-shadow:inset -6px 0 0 #0002;position:relative}
+.cover::after{content:"";position:absolute;left:18px;right:10px;top:22px;height:3px;background:#ffe9b8;box-shadow:0 8px 0 #ffe9b8}
+.stars{color:#e0a400;letter-spacing:2px}
+.stars i{font-style:normal;color:var(--line)}
+.bt{font-weight:700;line-height:1.3}
+.pr{color:var(--ok);font-weight:700;font-size:18px}
+.html{font:13px/1.65 "JetBrains Mono",monospace;white-space:pre;overflow-x:auto;margin:0;color:var(--mute)}
+.html b{font-weight:400;color:var(--ink)}
+.html mark{background:transparent;color:inherit;border-radius:3px;transition:background .35s}
+.s2 .html mark{background:var(--hi);color:var(--hink)}
+.csv{width:100%;border-collapse:collapse;font-size:14px}
+.csv th,.csv td{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left}
+.csv td{transition:background .35s}
+.csv tr.new td{background:color-mix(in srgb,var(--hi) 55%,transparent);color:var(--hink)}
+.csv .nr{text-align:right;white-space:nowrap}
+.say{margin-top:18px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+.say pre{margin:0;background:#0c1024;color:#e9ecf7;border-radius:10px;padding:14px;font-size:14px;overflow-x:auto}
+.say p{margin:0;color:#fff;font-size:17px}
+nav.scroll{display:flex;gap:6px;overflow-x:auto;padding:10px max(5vw,16px);border-bottom:1px solid var(--line);background:var(--bg)}
+nav.scroll a{flex:none;color:var(--ink);text-decoration:none;padding:8px 12px;border-radius:8px;font-size:15px}
+nav.scroll a:hover{background:var(--soft)}
+@media(min-width:900px){nav.scroll{position:sticky;top:0;z-index:5}}
+.plan{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:14px;margin-top:10px}
+.st{border:1px solid var(--line);border-radius:12px;padding:16px}
+.st .t{font-size:28px;font-weight:700;white-space:nowrap}
+.st .w{font-size:14px;color:var(--mute)}
+.st.done{border-color:var(--ok)}
+.st.done .w::after{content:" · 완료";color:var(--ok);font-weight:600}
+.step{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:clamp(18px,3vw,40px);border-top:1px solid var(--line)}
+.step:nth-of-type(even){background:var(--soft)}
+.code{position:relative}
+.code pre{margin:0;background:#0c1024;color:#e9ecf7;border-radius:12px;padding:44px 16px 16px;font-size:13.5px;line-height:1.6;overflow-x:auto;max-height:620px}
+.copy{position:absolute;top:8px;right:8px;min-height:32px;padding:0 12px;border-radius:8px;border:1px solid #ffffff40;background:#ffffff14;color:#fff;font:600 13px inherit;font-family:inherit;cursor:pointer}
+.fn{position:absolute;top:12px;left:16px;color:#a3aac2;font:13px "JetBrains Mono",monospace}
+.out{margin-top:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font:13px/1.6 "JetBrains Mono",monospace;white-space:pre;overflow-x:auto}
+ul{padding-left:20px;margin:0 0 12px}li{margin-bottom:6px}
+table.t{width:100%;border-collapse:collapse;font-size:15px}
+.t th,.t td{border-bottom:1px solid var(--line);padding:10px 8px;text-align:left;vertical-align:top}
+.t th{font-size:14px;color:var(--mute);font-weight:600}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(18px,3vw,40px)}
+.kbd{font:600 14px "JetBrains Mono",monospace;white-space:nowrap;border:1px solid var(--line);border-bottom-width:3px;border-radius:6px;padding:1px 7px;background:var(--panel)}
+.check label{display:flex;gap:12px;align-items:center;min-height:44px;padding:4px 0;font-size:17px;cursor:pointer}
+.check input{width:22px;height:22px;accent-color:var(--band)}
+.bar{height:10px;border-radius:5px;background:var(--line);overflow:hidden;margin:6px 0 16px}
+.bar i{display:block;height:100%;background:var(--ok);transition:width .3s}
+footer{background:var(--band);color:#dfe5ff;font-size:15px}
+footer a{color:#fff}
+@media(max-width:900px){.step,.two{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:760px){.machine{grid-template-columns:minmax(0,1fr)}.arr{transform:rotate(90deg);height:34px}.say{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:6.5em}.stack td::before{content:attr(data-l);float:inline-start;width:6em;margin-inline-start:-6.5em;color:var(--mute);font-size:13px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+
+<header class="hero band">
+<div class="wrap">
+<h1>파이썬 크롤링은<br>가져오기, 찾기, 저장하기 세 단계</h1>
+<p>사람이 사이트를 열어 제목과 가격을 엑셀에 복사하는 일을 프로그램이 대신합니다. 아래 버튼을 눌러 각 단계에서 무슨 일이 일어나는지 보세요.</p>
+
+<div class="flow" role="group" aria-label="크롤링 단계">
+<button id="b1" data-s="1" aria-pressed="true">① 가져오기</button>
+<button id="b2" data-s="2" aria-pressed="false">② 찾기</button>
+<button id="b3" data-s="3" aria-pressed="false">③ 저장하기</button>
+</div>
+
+<div class="machine" id="machine">
+<div class="pn" id="pA">
+<h4>사람이 보는 화면</h4>
+<div class="book">
+<div class="cover" aria-hidden="true"></div>
+<div>
+<div class="stars" aria-label="별점 3점">★★★<i>★★</i></div>
+<div class="bt">A Light in the ...</div>
+<div class="pr">£51.77</div>
+<div style="font-size:14px;color:var(--ok)">✓ In stock</div>
+</div>
+</div>
+</div>
+<div class="arr" id="a1" aria-hidden="true">→</div>
+<div class="pn" id="pB">
+<h4>프로그램이 받는 HTML</h4>
+<pre class="html"><b>&lt;article class="product_pod"&gt;</b>
+  &lt;p class="star-rating <mark>Three</mark>"&gt;…&lt;/p&gt;
+  &lt;h3&gt;
+    &lt;a title="<mark>A Light in the Attic</mark>"&gt;
+      A Light in the ...
+    &lt;/a&gt;
+  &lt;/h3&gt;
+  &lt;p class="price_color"&gt;<mark>£51.77</mark>&lt;/p&gt;
+<b>&lt;/article&gt;</b></pre>
+</div>
+<div class="arr" id="a2" aria-hidden="true">→</div>
+<div class="pn" id="pC">
+<h4>books.csv</h4>
+<table class="csv">
+<thead><tr><th>title</th><th class="nr">price</th><th>rating</th></tr></thead>
+<tbody id="rows"></tbody>
+</table>
+</div>
+</div>
+
+<div class="say">
+<pre id="sayCode"></pre>
+<p id="sayText"></p>
+</div>
+</div>
+</header>
+
+<nav class="scroll" aria-label="목차">
+<a href="#plan">학습 순서</a><a href="#s1">1 구조 보기</a><a href="#s2">2 한 페이지</a><a href="#s3">3 여러 페이지</a><a href="#s4">4 정제</a><a href="#s5">5 분석</a><a href="#run">실행 방법</a><a href="#errors">오류 해결</a><a href="#rules">지켜야 할 것</a><a href="#check">체크리스트</a>
+</nav>
+
+<section class="band" id="plan">
+<div class="wrap">
+<h2>2시간 학습 순서</h2>
+<p>연습 사이트는 <a href="https://books.toscrape.com/">books.toscrape.com</a>입니다. 크롤링 연습용으로 공개된 가상 서점이라 마음껏 요청해도 됩니다.</p>
+<div class="plan" id="planList"></div>
+</div>
+</section>
+
+<section class="band step" id="s1">
+<div>
+<h2>1단계. 정보가 HTML의 어디에 있는지 확인</h2>
+<p>프로그램은 화면을 보지 못하고 HTML 코드만 읽습니다. 그래서 먼저 사람이 개발자 도구로 <strong>정보에 붙은 이름표</strong>를 확인해서 코드에 알려 줘야 합니다.</p>
+<h3>개발자 도구 여는 법</h3>
+<table class="t stack">
+<thead><tr><th>환경</th><th>방법</th></tr></thead>
+<tbody>
+<tr><td>Windows</td><td><span class="kbd">F12</span></td></tr>
+<tr><td>Mac Chrome·Edge·Whale</td><td><span class="kbd">Cmd+Option+I</span>, 요소 선택은 <span class="kbd">Cmd+Option+C</span></td></tr>
+<tr><td>Mac Safari</td><td>설정 → 고급 → "웹 개발자용 기능 보기"를 켠 뒤 <span class="kbd">Cmd+Option+I</span></td></tr>
+<tr><td>공통</td><td>책 제목 위에서 우클릭 → <strong>검사</strong></td></tr>
+</tbody>
+</table>
+<h3>찾을 이름표 세 개</h3>
+<ul>
+<li>책 한 권을 감싼 상자: <code>article.product_pod</code></li>
+<li>가격: <code>p.price_color</code></li>
+<li>별점: <code>p.star-rating</code>의 두 번째 class 값 (예: <code>Three</code>)</li>
+</ul>
+<p>제목은 화면 글자가 "A Light in the ..."처럼 잘려 있어서, 잘리지 않은 <code>a</code> 태그의 <code>title</code> 속성을 씁니다.</p>
+</div>
+<div>
+<h3 style="margin-top:0">설치 (처음 한 번)</h3>
+<div class="code" data-k="install"></div>
+<p style="margin-top:12px">가상환경은 이 폴더 전용 파이썬 공간입니다. 컴퓨터 전체의 파이썬을 건드리지 않고 라이브러리를 설치할 수 있습니다.</p>
+</div>
+</section>
+
+<section class="band step" id="s2">
+<div>
+<h2>2단계. 페이지 하나에서 제목과 가격 뽑기</h2>
+<p>크롤링의 ① 가져오기와 ② 찾기를 한 번에 해 봅니다. 결과는 화면에 출력합니다.</p>
+<h3>꼭 구분할 두 쌍</h3>
+<table class="t stack">
+<thead><tr><th>코드</th><th>돌려주는 것</th></tr></thead>
+<tbody>
+<tr><td><code>select()</code></td><td>조건에 맞는 태그 <strong>모두</strong> (리스트)</td></tr>
+<tr><td><code>select_one()</code></td><td>조건에 맞는 <strong>첫 번째</strong> 태그 하나</td></tr>
+<tr><td><code>.text</code></td><td>태그 <strong>안의 글자</strong></td></tr>
+<tr><td><code>["title"]</code></td><td>태그의 <strong>속성 값</strong></td></tr>
+</tbody>
+</table>
+<h3>직접 해볼 것</h3>
+<ul>
+<li><code>res.encoding = "utf-8"</code> 줄을 주석 처리하고 실행하면 가격이 <code>Â£</code>로 깨집니다.</li>
+<li>출력에 별점을 추가해 보세요: <code>book.select_one("p.star-rating")["class"][1]</code></li>
+</ul>
+</div>
+<div>
+<div class="code" data-k="first"></div>
+<div class="out">상태 코드: 200
+페이지 제목: All products | Books to Scrape - Sandbox
+책 수: 20
+ 1. A Light in the Attic / £51.77
+ 2. Tipping the Velvet / £53.74
+ …
+20. It's Only the Himalayas / £45.17</div>
+</div>
+</section>
+
+<section class="band step" id="s3">
+<div>
+<h2>3단계. 여러 페이지를 돌며 모아서 CSV로 저장</h2>
+<p>사이트 아래쪽 <strong>next</strong>를 누르면 주소의 숫자만 바뀝니다.</p>
+<div class="out">…/catalogue/page-1.html
+…/catalogue/page-2.html
+…/catalogue/page-3.html</div>
+<p style="margin-top:12px">그래서 숫자를 1, 2, 3으로 바꿔 가며 2단계와 같은 작업을 반복하고, 결과를 <code>books.csv</code>에 씁니다. 페이지 사이에는 1초씩 쉬어서 서버에 부담을 주지 않습니다.</p>
+<h3>2단계와 달라진 점</h3>
+<ul>
+<li>같은 작업을 <code>fetch_books()</code> 함수로 묶어 페이지마다 호출</li>
+<li>책 한 권을 <code>{"title": …, "price": …, "rating": …}</code> dict 하나로 저장</li>
+<li><code>csv.DictWriter</code>로 파일에 쓰기 (<code>utf-8-sig</code>는 엑셀에서 한글이 깨지지 않게 함)</li>
+</ul>
+<p><strong>완료 기준:</strong> books.csv가 61줄이면 성공입니다. 첫 줄은 열 이름이고 나머지 60줄이 책입니다.</p>
+</div>
+<div>
+<div class="code" data-k="crawler"></div>
+</div>
+</section>
+
+<section class="band step" id="s4">
+<div>
+<h2>4단계. pandas로 가격을 숫자로 바꾸기</h2>
+<p>CSV의 가격은 <code>£51.77</code>이라는 <strong>글자</strong>라서 평균을 낼 수 없습니다. 기호를 지우고 <code>51.77</code>이라는 <strong>숫자</strong>로 바꿉니다. 별점 <code>Three</code>도 <code>3</code>으로 바꿉니다.</p>
+<table class="t stack">
+<thead><tr><th>원래 값</th><th>바꾼 값</th><th>방법</th></tr></thead>
+<tbody>
+<tr><td><code>£51.77</code></td><td><code>51.77</code></td><td><code>str.replace</code> 후 <code>astype(float)</code></td></tr>
+<tr><td><code>Three</code></td><td><code>3</code></td><td>사전을 만들어 <code>map()</code></td></tr>
+</tbody>
+</table>
+</div>
+<div>
+<div class="code" data-k="clean"></div>
+</div>
+</section>
+
+<section class="band step" id="s5">
+<div>
+<h2>5단계. 별점이 높으면 더 비쌀까?</h2>
+<p>숫자로 바꿨으니 이제 계산이 됩니다. 별점별 평균 가격을 구해 보면, 이 60권에서는 별점과 가격 사이에 뚜렷한 관계가 없습니다. 별점 5점 책의 평균이 오히려 가장 쌉니다.</p>
+<div id="avg" style="margin-top:14px"></div>
+<p style="font-size:14px;color:var(--mute)">1~3페이지 60권을 실제로 수집해 계산한 값입니다.</p>
+</div>
+<div>
+<div class="code" data-k="group"></div>
+<p style="margin-top:12px">다음에는 <code>range(1, 4)</code>를 <code>range(1, 51)</code>로 바꿔 1,000권 전체를 모은 뒤 같은 분석을 해 보세요.</p>
+</div>
+</section>
+
+<section class="band" id="run">
+<div class="wrap two">
+<div>
+<h2>실행 방법</h2>
+<p>VS Code 메뉴 <strong>터미널 → 새 터미널</strong>(<span class="kbd">Ctrl+`</span>)을 열고 한 줄씩 입력합니다.</p>
+<div class="code" data-k="run"></div>
+<p style="margin-top:12px">입력 줄 앞에 <code>(.venv)</code>가 보이면 가상환경이 켜진 것입니다. 터미널을 새로 열 때마다 1, 2번을 다시 합니다.</p>
+</div>
+<div id="errors">
+<h2>오류가 나면</h2>
+<table class="t stack">
+<thead><tr><th>메시지</th><th>원인과 해결</th></tr></thead>
+<tbody>
+<tr><td><code>No module named 'bs4'</code></td><td>가상환경이 꺼져 있습니다. <code>source .venv/bin/activate</code></td></tr>
+<tr><td><code>No such file or directory</code></td><td>다른 폴더에 있습니다. <code>cd</code>로 작업 폴더로 이동</td></tr>
+<tr><td>가격이 <code>Â£51.77</code></td><td>인코딩 추측 오류. <code>res.encoding = "utf-8"</code> 추가</td></tr>
+<tr><td>상태 코드 <code>403</code>, <code>429</code></td><td>사이트가 차단한 것입니다. 즉시 멈춥니다</td></tr>
+<tr><td>그 밖의 오류</td><td>오류 메시지 <strong>전체</strong>를 복사해서 질문합니다</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+
+<section class="band" id="rules" style="background:var(--soft)">
+<div class="wrap two">
+<div>
+<h2>크롤링할 때 지켜야 할 것</h2>
+<ul>
+<li><strong>robots.txt 확인:</strong> 사이트 주소 뒤에 <code>/robots.txt</code>를 붙여 열어 봅니다. <code>Disallow: /</code>이면 자동 수집을 원하지 않는다는 뜻입니다.</li>
+<li><strong>이용약관 확인:</strong> 데이터 수집이나 재사용을 금지하는 사이트가 있습니다.</li>
+<li><strong>천천히 요청:</strong> <code>time.sleep()</code>으로 요청 사이에 간격을 둡니다.</li>
+<li><strong>차단되면 멈춤:</strong> 403, 429 응답은 그만 요청하라는 신호입니다.</li>
+</ul>
+</div>
+<div>
+<h2>왜 이 연습 사이트인가</h2>
+<p>books.toscrape.com은 robots.txt가 없고(404) 연습용으로 공개되어 있습니다.</p>
+<p>반면 네이버 부동산처럼 robots.txt에 <code>Disallow: /</code>를 둔 사이트는 자동 수집을 막고 있으므로 학습 대상에서 뺐습니다.</p>
+</div>
+</div>
+</section>
+
+<section class="band check" id="check">
+<div class="wrap">
+<h2>체크리스트</h2>
+<div class="bar"><i id="barFill" style="width:0"></i></div>
+<div id="checks"></div>
+</div>
+</section>
+
+<footer class="band">
+<div class="wrap">파일 위치: <code style="background:#ffffff1f;color:#fff">3차_Final Project/crawling_practice/</code> · step1_structure.py, first_crawler.py, crawler.py, books.csv</div>
+</footer>
+
+<script>
+{
+const C = {
+install: ["터미널", String.raw`# 1) 작업 폴더로 이동
+cd "3차_Final Project/crawling_practice"
+
+# 2) 가상환경 만들기 (처음 한 번만)
+python3 -m venv .venv
+
+# 3) 가상환경 켜기 (터미널을 열 때마다)
+source .venv/bin/activate
+
+# 4) 라이브러리 설치
+pip install requests beautifulsoup4 pandas`],
+first: ["first_crawler.py", String.raw`import requests                   # HTTP 요청을 보내는 라이브러리
+from bs4 import BeautifulSoup     # HTML을 분석(파싱)하는 라이브러리
+
+URL = "https://books.toscrape.com/"
+
+# 1) 웹 페이지 요청  → ① 가져오기
+res = requests.get(URL, timeout=10)  # 10초 안에 응답이 없으면 실패 처리
+res.raise_for_status()               # 4xx, 5xx 오류면 예외 발생
+print("상태 코드:", res.status_code)  # 200이면 정상
+
+# "£"가 "Â£"로 깨지지 않게 인코딩을 직접 지정
+res.encoding = "utf-8"
+
+# 2) HTML 파싱: 문자열을 태그 단위로 찾을 수 있는 객체로 변환
+soup = BeautifulSoup(res.text, "html.parser")
+
+# 3) 페이지 제목 추출
+title = soup.title.text.strip()
+print("페이지 제목:", title)
+
+# 4) 책 목록 추출  → ② 찾기
+books = soup.select("article.product_pod")  # 책 카드 모두 (리스트)
+print("책 수:", len(books))
+
+for i, book in enumerate(books, 1):
+    # 제목: h3 > a 태그의 title 속성 (화면 글자는 잘려 있음)
+    name = book.h3.a["title"]
+    # 가격: class가 price_color인 p 태그의 글자
+    price = book.select_one("p.price_color").text
+    print(f"{i:2}. {name} / {price}")`],
+crawler: ["crawler.py", String.raw`import csv          # CSV 파일 저장용
+import time         # 요청 사이에 쉬기 위한 용도
+import requests     # HTTP 요청
+from bs4 import BeautifulSoup  # HTML 파싱
+
+# {} 자리에 페이지 번호가 들어갑니다.
+BASE_URL = "https://books.toscrape.com/catalogue/page-{}.html"
+HEADERS = {"User-Agent": "Mozilla/5.0"}  # 브라우저 요청이라고 알림
+
+
+def fetch_books(page_num):
+    """한 페이지의 책 목록을 dict 리스트로 반환.
+    페이지가 없으면(404) None을 반환."""
+    url = BASE_URL.format(page_num)           # 예: 2 → .../page-2.html
+    res = requests.get(url, headers=HEADERS, timeout=10)
+
+    if res.status_code == 404:                # 더 이상 페이지가 없을 때
+        return None
+    res.raise_for_status()                    # 그 밖의 오류는 예외로
+
+    res.encoding = "utf-8"
+    soup = BeautifulSoup(res.text, "html.parser")
+
+    books = []
+    for art in soup.select("article.product_pod"):
+        books.append({                        # 책 한 권 = dict 하나
+            "title": art.h3.a["title"],
+            "price": art.select_one("p.price_color").text,
+            # class 목록 ["star-rating", "Three"]의 두 번째 값
+            "rating": art.select_one("p.star-rating")["class"][1],
+        })
+    return books
+
+
+def main():
+    all_books = []                            # 전체 결과
+
+    for page in range(1, 4):                  # 1, 2, 3페이지
+        books = fetch_books(page)
+        if books is None:
+            break
+        all_books.extend(books)               # 이번 페이지 결과 합치기
+        print(f"{page}페이지 완료: {len(books)}권")
+        time.sleep(1)                         # 서버 부담 줄이기
+
+    print("총", len(all_books), "권 수집")
+
+    # ③ 저장하기
+    # utf-8-sig: 엑셀에서 글자 깨짐 방지 / newline="": 빈 줄 방지
+    with open("books.csv", "w", newline="", encoding="utf-8-sig") as f:
+        writer = csv.DictWriter(f, fieldnames=["title", "price", "rating"])
+        writer.writeheader()                  # 첫 줄에 열 이름
+        writer.writerows(all_books)           # 모든 행
+    print("books.csv 저장 완료")
+
+
+if __name__ == "__main__":                   # 직접 실행할 때만 main()
+    main()`],
+clean: ["clean.py", String.raw`import pandas as pd  # 표 형태 데이터를 다루는 라이브러리
+
+df = pd.read_csv("books.csv")
+
+# 가격 글자 "£51.77" → 숫자 51.77
+df["price_num"] = (
+    df["price"]
+    .str.replace("Â", "", regex=False)   # 깨진 문자가 있으면 제거 (안전용)
+    .str.replace("£", "", regex=False)   # 파운드 기호 제거
+    .astype(float)                       # 숫자 타입으로 변환
+)
+
+# 별점 글자 "Three" → 숫자 3
+rating_map = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
+df["rating_num"] = df["rating"].map(rating_map)
+
+df = df.drop_duplicates()                # 중복 행 제거
+
+# 기본 통계 (개수, 평균, 최소, 최대 등)
+print(df[["price_num", "rating_num"]].describe())
+
+# 가장 비싼 책 5권
+print(df.sort_values("price_num", ascending=False).head(5))
+
+df.to_csv("books_clean.csv", index=False, encoding="utf-8-sig")
+print("books_clean.csv 저장 완료")`],
+group: ["clean.py 맨 아래에 추가", String.raw`# 별점별 평균 가격
+# groupby: 같은 별점끼리 묶기 → mean: 묶음마다 평균
+print(df.groupby("rating_num")["price_num"].mean().round(2))`],
+run: ["터미널", String.raw`cd "/Users/…/3차_Final Project/crawling_practice"
+source .venv/bin/activate
+python first_crawler.py      # 2단계
+python crawler.py            # 3단계
+python clean.py              # 4·5단계`]
+};
+
+const esc = s => s.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+document.querySelectorAll(".code").forEach(box => {
+  const [fn, src] = C[box.dataset.k];
+  box.innerHTML = '<span class="fn">' + esc(fn) + '</span><button class="copy" type="button">복사</button><pre><code>' + esc(src) + '</code></pre>';
+  const btn = box.querySelector(".copy");
+  btn.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(src); btn.textContent = "복사됨"; }
+    catch (e) { btn.textContent = "직접 선택해 복사하세요"; }
+    setTimeout(() => btn.textContent = "복사", 1600);
+  });
+});
+
+const plan = [
+  ["오늘 밤", "1단계", "구조 보기", "10분", true],
+  ["오늘 밤", "2단계", "한 페이지 뽑기", "15분", true],
+  ["오늘 밤", "3단계", "여러 페이지 → CSV", "35분", true],
+  ["내일 오전", "4단계", "pandas 정제", "30분", false],
+  ["내일 오전", "5단계", "분석과 정리", "30분", false]
+];
+document.getElementById("planList").innerHTML = plan.map((p, i) =>
+  '<a class="st' + (p[4] ? ' done' : '') + '" href="#s' + (i + 1) + '" style="color:inherit;text-decoration:none"><div class="w">' + p[0] + ' · ' + p[1] + '</div><div class="t">' + p[3] + '</div><div>' + p[2] + '</div></a>'
+).join("");
+
+const avg = [[1, 34.31], [2, 33.87], [3, 38.81], [4, 35.53], [5, 32.48]];
+const mx = Math.max(...avg.map(a => a[1]));
+document.getElementById("avg").innerHTML = avg.map(a =>
+  '<div style="display:grid;grid-template-columns:4.5em minmax(0,1fr) 4.5em;gap:10px;align-items:center;margin-bottom:8px"><span>별점 ' + a[0] + '</span><span style="height:22px;border-radius:4px;background:' + (a[1] === mx ? 'var(--band)' : 'color-mix(in srgb,var(--band) 35%,transparent)') + ';width:' + (a[1] / mx * 100).toFixed(1) + '%"></span><span style="text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums">£' + a[1].toFixed(2) + '</span></div>'
+).join("");
+
+const rows = [
+  ["A Light in the Attic", "£51.77", "Three"],
+  ["Tipping the Velvet", "£53.74", "One"],
+  ["Soumission", "£50.10", "One"]
+];
+const steps = {
+  1: ["res = requests.get(URL)", "① 가져오기: 브라우저로 사이트를 여는 것처럼, 서버에 페이지를 달라고 요청해서 HTML 코드를 통째로 받습니다. 아직 필요한 정보만 골라내지는 않았습니다."],
+  2: ['book.select_one("p.price_color").text', "② 찾기: 1단계에서 확인한 이름표(product_pod, price_color, star-rating)로 HTML 속에서 제목, 가격, 별점만 골라냅니다. 형광펜으로 칠한 부분입니다."],
+  3: ["writer.writerows(all_books)", "③ 저장하기: 골라낸 값을 한 권에 한 줄씩 books.csv에 씁니다. 페이지 번호만 바꿔 반복하면 60권, 1,000권도 같은 방식으로 모입니다."]
+};
+const machine = document.getElementById("machine");
+const show = n => {
+  document.querySelectorAll(".flow button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.s == n)));
+  machine.className = "machine s" + n;
+  document.getElementById("pA").classList.toggle("dim", n == 3);
+  document.getElementById("pB").classList.toggle("dim", false);
+  document.getElementById("pC").classList.toggle("dim", n == 1);
+  document.getElementById("a1").classList.toggle("on", n == 1);
+  document.getElementById("a2").classList.toggle("on", n == 3);
+  const shown = n == 3 ? rows : [];
+  document.getElementById("rows").innerHTML = shown.length
+    ? shown.map((r, i) => '<tr class="' + (i === 0 ? 'new' : '') + '"><td>' + esc(r[0]) + '</td><td class="nr">' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td></tr>').join("") + '<tr><td colspan="3" style="color:var(--mute)">… 60권까지</td></tr>'
+    : '<tr><td colspan="3" style="color:var(--mute)">아직 비어 있음</td></tr>';
+  document.getElementById("sayCode").textContent = steps[n][0];
+  document.getElementById("sayText").textContent = steps[n][1];
+};
+document.querySelectorAll(".flow button").forEach(b => b.addEventListener("click", () => show(+b.dataset.s)));
+show(1);
+
+const items = [
+  ["c1", "1단계: 패키지 설치, 개발자 도구로 구조 확인", true],
+  ["c2", "2단계: first_crawler.py 실행, 20권 출력", true],
+  ["c3", "3단계: books.csv 생성, 60권 수집", true],
+  ["c4", "4단계: books_clean.csv 생성, 가격을 숫자로 변환", false],
+  ["c5", "5단계: 별점별 평균 가격 확인", false]
+];
+let saved = {};
+try { saved = JSON.parse(localStorage.getItem("crawl-check") || "{}"); } catch (e) {}
+const box = document.getElementById("checks");
+box.innerHTML = items.map(it => '<label for="' + it[0] + '"><input type="checkbox" id="' + it[0] + '"' + ((saved[it[0]] ?? it[2]) ? ' checked' : '') + '>' + it[1] + '</label>').join("");
+const upd = () => {
+  const cs = [...box.querySelectorAll("input")];
+  const st = {};
+  cs.forEach(c => st[c.id] = c.checked);
+  document.getElementById("barFill").style.width = (cs.filter(c => c.checked).length / cs.length * 100) + "%";
+  try { localStorage.setItem("crawl-check", JSON.stringify(st)); } catch (e) {}
+};
+box.addEventListener("change", upd);
+upd();
+}
+</script>
+</body>
+</html>
