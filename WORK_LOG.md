@@ -64,7 +64,7 @@
   - `CLAUDE.md`의 경로에서 맥 사용자 이름을 지우고 `~`로 바꿈
 - **~08:58** `crawling_practice` 폴더를 별도 git 저장소로 만듦 (기존 git 루트가 홈 폴더 전체였기 때문)
   - 이 저장소의 커밋 이메일만 GitHub 익명 주소(noreply)로 설정. 전역 설정은 그대로 둠
-- **~08:59** GitHub `tosolvetheproblem/crawling_practice`(공개)에 올리고 Pages를 `main` 브랜치의 `/docs`로 설정
+- **~08:58** GitHub `tosolvetheproblem/crawling_practice`(공개)에 올리고 Pages를 `main` 브랜치의 `/docs`로 설정
 - **08:58** 배포 완료 확인 (HTTP 200): https://tosolvetheproblem.github.io/crawling_practice/
 
 ---
